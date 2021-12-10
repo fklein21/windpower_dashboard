@@ -30,14 +30,16 @@ def degrees_to_cardinal(d):
     ix = int((d + 11.25)/22.5)
     return dirs[ix % 16]
 
-# df['WD100CARD'] = df.WD100.apply(lambda x: degrees_to_cardinal(x))
-# df['WD10CARD'] = df.WD10.apply(lambda x: degrees_to_cardinal(x))
-
 def card_sorter(column):
     """Sort function"""
     wd_card=["N","NNE","NE","ENE","E","ESE", "SE", "SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
     correspondence = {card: order for order, card in enumerate(wd_card)}
     return column.map(correspondence)
+
+## get the required data
+def get_wind_forecast():
+    pass
+
 
 
 
@@ -123,10 +125,7 @@ def get_figure_24h(dff, selected_zone, selected_hour=0):
             title='Forecast Power Output over 24 hours')
     return fig
 
-# dff = pd.DataFrame()
-# selected_zone = []
-# figure_24h = get_figure_24h(dff, selected_zone)
-
+## get figure for the energy per hour graph 
 def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     print('In get_figure_energy_per_hour')
     print('selected_zone', selected_zone)
@@ -164,14 +163,11 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
 def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
     df = df[df['ZONEID']==selected_zone_nr]
     bins = np.linspace(0,24,13)
-    labels = [0,2,4,6,8,10,12,14,16,18,20,22]
+    labels = range(0,23,2)
 
     df['WS100BIN'] = pd.cut(df['WS100'], bins=bins, labels = labels)
-
     df_grouped = df.groupby(['WD100CARD','WS100BIN']).count().reset_index()
-    
     wd_card=["N","NNE","NE","ENE","E","ESE", "SE", "SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
-
     wd_zeros = np.zeros(len(wd_card))
     df_all_wd_card = pd.DataFrame([wd_card, wd_zeros, wd_zeros])
     df_all_wd_card = df_all_wd_card.T
@@ -179,7 +175,6 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
     
     data_wind = df_grouped[['WD100CARD', 'WS100BIN', 'TIMESTAMP']]
     data_wind.columns = df_all_wd_card.columns
-    #print(data_wind.head(50))
 
     datax = pd.concat([data_wind, df_all_wd_card], axis = 0)
     datax = datax.sort_values(by='WD100CARD', key=card_sorter)
@@ -189,13 +184,10 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
     wind_all_speeds
     datax = pd.concat([wind_all_speeds, df_all_wd_card, data_wind], axis = 0)
 
-    print('Wind data\n',datax.head())
-
     fig = px.bar_polar(datax, 
                    r="FREQUENCY", 
                    theta="WD100CARD",
                    color="WS100BIN", 
-                   #template="plotly_black",
                    color_discrete_sequence= px.colors.sequential.Plasma_r,
                    )                     
     fig.layout.showlegend = show_legend
@@ -215,8 +207,6 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
         fig.update_layout( 
             title='Zone '+str(selected_zone_nr)
         )
-
-    #fig.show()
     return fig
 
 
@@ -235,12 +225,6 @@ filename_wind = 'prediction_wind_for_dashboard.csv'
 df = pd.read_csv(filename)
 df_wind = pd.read_csv(filename_wind)
 # df_targetvar_yesterday ...
-
-
-
-
-
-
 
 
 def Header(name, app):
@@ -454,9 +438,6 @@ def update_graphs(selected_zone, selected_hour):
     Input('zone-selector', 'value'),
     Input('slider-hour', 'value'))
 def update_figure(selected_zone, selected_hour):
-    print('in update_figure')
-    print('selected_zone', selected_zone)
-    print('selected_hour', selected_hour)
     return get_figure_energy_per_hour(df, selected_zone, selected_hour)
 
 @app.callback(
