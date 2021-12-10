@@ -5,19 +5,12 @@ import numpy as np
 import dash
 from datetime import date
 import dash_bootstrap_components as dbc
-#import dash_core_components as dcc
 from dash import dcc
-#import dash_html_components as html
 from dash import html
 import plotly.graph_objects as go
 import plotly.express as px
 
-
 from dash.dependencies import Input, Output
-
-#from predict_api import make_prediction
-
-
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
@@ -40,19 +33,13 @@ def card_sorter(column):
 def get_wind_forecast():
     pass
 
-
-
-
 ################################################################################
 # APP INITIALIZATION
 ################################################################################
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-
 # this is needed by gunicorn command in procfile
 server = app.server
-
-
 
 ################################################################################
 # STYLE
@@ -84,7 +71,6 @@ CARD_TEXT_STYLE = {
     'textAlign': 'center',
     'color': '#0074D9'
 }
-
 ################################################################################
 # PLOTS
 ################################################################################
@@ -100,7 +86,8 @@ def get_figure_24h(dff, selected_zone, selected_hour=0):
     for column in selected_zone:
         color = color_dict[column]
         fig.add_traces(go.Scatter(x=dff['HOUR'], y = df[column], 
-                    mode = 'lines', line=dict(color=color), name=column))
+            mode = 'lines', line=dict(color=color), name=column)
+        )
     fig.update_xaxes(range = [tmin, tmax])
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
@@ -133,7 +120,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
         fig.add_traces(
             go.Bar(x=[zone], y=[dff.loc[zone][dff.columns[-1]]], 
                 marker={'color': color}, showlegend=False)
-        )
+    )
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
@@ -166,30 +153,29 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
     datax = pd.concat([wind_all_speeds, df_all_wd_card, data_wind], axis = 0)
 
     fig = px.bar_polar(datax, 
-                   r="FREQUENCY", 
-                   theta="WD100CARD",
-                   color="WS100BIN", 
-                   color_discrete_sequence= px.colors.sequential.Plasma_r,
-                   )                     
+        r="FREQUENCY", 
+        theta="WD100CARD",
+        color="WS100BIN", 
+        color_discrete_sequence= px.colors.sequential.Plasma_r,
+    )                     
     fig.layout.showlegend = show_legend
     fig.update_layout(
-            autosize=True,
-            width=300,
-            height=300,
-            margin=dict(
-                l=30,
-                r=30,
-                b=30,
-                t=50,
-                pad=4
-            )
+        autosize=True,
+        width=300,
+        height=300,
+        margin=dict(
+            l=30,
+            r=30,
+            b=30,
+            t=50,
+            pad=4
+        )
     )
     if show_title:
         fig.update_layout( 
             title='Zone '+str(selected_zone_nr)
         )
     return fig
-
 
 ################################################################################
 # LAYOUT
@@ -214,7 +200,6 @@ def Header(name, app):
         src=app.get_asset_url("dash-logo.png"), style={"float": "right", "height": 60}
     )
     link = html.A(logo, href="https://plotly.com/dash/")
-
     return dbc.Row([dbc.Col(title, md=8),],justify="center")
 
 controls = dbc.Card(
@@ -276,129 +261,131 @@ sidebar = html.Div(
 title_tab_1 = html.Div('Projected Energy Output', id="title-tab-1")
 figure_energy_24h = dcc.Graph(id='figure-energy-24h')
 slider_hour = dcc.Slider( 
-                    id='slider-hour',
-                    min=1,
-                    max=23,
-                    value=1,
-                    marks={str(hh): str(hh) for hh in range(1,24)},
-                    step=None
-                )
+    id='slider-hour',
+    min=1,
+    max=23,
+    value=1,
+    marks={str(hh): str(hh) for hh in range(1,24)},
+    step=None
+)
+
 figure_energy_per_hour = dcc.Graph(id="figure-energy-per-hour")
 maincontent_tab_1 = dbc.Container( 
-        [
-            dbc.Row( 
-                [ 
-                    dbc.Col( 
-                        [ 
-                            sidebar,
-                        ], md=3,
-                    ),
-                    dbc.Col( 
-                        [
-                            figure_energy_24h,
-                            slider_hour,
-                            figure_energy_per_hour
-                        ], md=9,
-                    )
-                ]
-            )
-        ], fluid=True,
-    )
-maincontent_tab_2 = dbc.Container( 
-        [   
-            html.Div(""),
-            dbc.Row( 
-                [ 
-                    dbc.Col( 
-                        [ 
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 1"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-1", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 4"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-4", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 7"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-7", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                        ]
-                    ), 
-                    dbc.Col( 
-                        [ 
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 2"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-2", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 5"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-5", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 8"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-8", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 10"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-10", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                        ]
-                    ), 
-                    dbc.Col( 
-                        [ 
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 3"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-3", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 6"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-6", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                            dbc.Card( 
-                                [ 
-                                    dbc.CardHeader("Zone 9"),
-                                    dbc.CardBody(dcc.Graph(id="wind-rose-9", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                                ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                            ),
-                        ]
-                    ), 
-                ]
-            )
-        ]
-    )
-
-app.layout = html.Div( 
-            [
-                Header("Energy Output Forecast for the Next 24 Hours", app),
-                html.Hr(),
-                dbc.Tabs( 
+    [
+        dbc.Row( 
+            [ 
+                dbc.Col( 
                     [ 
-                        dbc.Tab(maincontent_tab_1, label="Forecast Energy Output", tab_id="tab-energy-forecast"),
-                        dbc.Tab(maincontent_tab_2, label="Wind Strength and Direction", tab_id="tab-wind-roses"),
-                    ],
-                    id="tabs",
-                    active_tab="tab-energy-forecast"
+                        sidebar,
+                    ], md=3,
+                ),
+                dbc.Col( 
+                    [
+                        figure_energy_24h,
+                        slider_hour,
+                        figure_energy_per_hour
+                    ], md=9,
                 )
             ]
+        )
+    ], fluid=True,
+)
+
+maincontent_tab_2 = dbc.Container( 
+    [   
+        html.Div(""),
+        dbc.Row( 
+            [ 
+                dbc.Col( 
+                    [ 
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 1"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-1", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 4"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-4", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 7"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-7", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                    ]
+                ), 
+                dbc.Col( 
+                    [ 
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 2"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-2", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 5"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-5", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 8"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-8", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 10"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-10", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                    ]
+                ), 
+                dbc.Col( 
+                    [ 
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 3"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-3", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 6"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-6", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Zone 9"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-9", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                    ]
+                ), 
+            ]
+        )
+    ]
+)
+
+app.layout = html.Div( 
+    [
+        Header("Energy Output Forecast for the Next 24 Hours", app),
+        html.Hr(),
+        dbc.Tabs( 
+            [ 
+                dbc.Tab(maincontent_tab_1, label="Forecast Energy Output", tab_id="tab-energy-forecast"),
+                dbc.Tab(maincontent_tab_2, label="Wind Strength and Direction", tab_id="tab-wind-roses"),
+            ],
+            id="tabs",
+            active_tab="tab-energy-forecast"
+        )
+    ]
 )
 ################################################################################
 # INTERACTION CALLBACKS
@@ -412,7 +399,6 @@ def update_graphs(selected_zone, selected_hour):
     cols = selected_zone.copy()
     cols.append('TIMESTAMP')
     return get_figure_24h(df, selected_zone, selected_hour)
-
 
 @app.callback(
     Output('figure-energy-per-hour', 'figure'),
@@ -447,8 +433,6 @@ def update_figure_windrose(date):
            plot_windrose(df_wind, 10, show_title=False)
 
 
-
 # Add the server clause:
 if __name__ == "__main__":
-
     app.run_server()
