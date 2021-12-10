@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Task Master</title>
+{% endblock %}
+
+{% block body %}
+<div class="content">
+    <h1 style="text-align: center">Task Master</h1>
+    {% if predictions|length < 1 %}
+    <h4 style="text-align: center">There are no tasks. Create one below!</h4>
+    {% else %}
+    <table>
+        <tr>
+           
+            <th>Hour</th>
+            {% for i in predictions[0] %}
+                <th>zone {{i}}</th>
+                
+            {% endfor %}
+        </tr>
+        {% for row in predictions[1:] %}
+    
+            <tr>
+                {% for i in row %}
+                <td>{{ i}}</td>
+                {% endfor %}
+                
+               
+            </tr>
+        {% endfor %}
+
+
+    </table>
+    {% endif %}
+
+    <div class="form">
+        <form action="/" method="POST">
+            <input type="date" name="content" id="content"
+            min="2012-01-01" max="2013-12-31">
+            <select name="zone">
+                <option value="-1" selected>All zones</option>
+                <option value="1">Zone 1</option>
+                <option value="2">Zone 2</option>
+                <option value="3">Zone 3</option>
+                <option value="4">Zone 4</option>
+                <option value="5">Zone 5</option>
+                <option value="6">Zone 6</option>
+                <option value="7">Zone 7</option>
+                <option value="8">Zone 8</option>
+                <option value="9">Zone 9</option>
+                <option value="10">Zone 10</option>
+              </select></label>
+            <input type="submit" value="Submit Query">
+        </form>
+    </div>
+</div>
+{% endblock %}
