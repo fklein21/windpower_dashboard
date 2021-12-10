@@ -12,6 +12,17 @@
 
 6. Deploy to Heroku
 
+
+
+
+
+
+
+
+
+
+
+
 ### Requirements:
 
 - python = 3.8.11 (you can install it with `pyenv install 3.8.11`)

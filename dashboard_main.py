@@ -12,6 +12,7 @@ from dash import html
 import plotly.graph_objects as go
 import plotly.express as px
 
+
 from dash.dependencies import Input, Output
 
 #from predict_api import make_prediction
@@ -43,7 +44,8 @@ def card_sorter(column):
 ################################################################################
 # APP INITIALIZATION
 ################################################################################
-app = dash.Dash('Wind energy forecast', external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+
 
 # this is needed by gunicorn command in procfile
 server = app.server
@@ -250,7 +252,6 @@ def Header(name, app):
 
     return dbc.Row([dbc.Col(title, md=8),],justify="center")
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 controls = dbc.Card(
     [
         html.Div(
@@ -488,4 +489,5 @@ def update_figure_windrose(date):
 
 # Add the server clause:
 if __name__ == "__main__":
+
     app.run_server()
