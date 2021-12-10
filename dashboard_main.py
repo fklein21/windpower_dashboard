@@ -94,15 +94,7 @@ colors = px.colors.qualitative.Plotly
 color_dict = {'Zone '+str(z): c for z,c in zip(range(1,11), colors)}
 
 def get_figure_24h(dff, selected_zone, selected_hour=0):
-    print(selected_zone)
-    print(selected_hour)
-    print('dff.columns',dff.columns)
-    tmin, tmax = 0,24
-    if 'HOUR' in dff.columns:
-        tmin = dff['HOUR'].min()
-        tmax = dff['HOUR'].max()
-    print('tmin, tmax',tmin,tmax)
-
+    tmin, tmax = 1,24
     fig = go.Figure()
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     for column in selected_zone:
@@ -127,32 +119,21 @@ def get_figure_24h(dff, selected_zone, selected_hour=0):
 
 ## get figure for the energy per hour graph 
 def get_figure_energy_per_hour(df, selected_zone, selected_hour):
-    print('In get_figure_energy_per_hour')
-    print('selected_zone', selected_zone)
-    print('selected_hour', selected_hour)
-    print('df.columns', df.columns)
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     df_hour = df[selected_zone]
     df_hour = pd.DataFrame(df_hour.loc[selected_hour:selected_hour])
     cols = df_hour.columns
-    print('cols',cols)
     cols = [cc for cc in cols if cc.startswith('Zone')]
     dff = df_hour[cols]
     dff = dff.T
-    # dff.reset_index(inplace=True)
-    print('dff.head()\n',dff.head())
     bars = []
     fig = go.Figure()
     for zone in selected_zone:
         color = color_dict[zone]
-        print('color', color)
-        print('zone', zone)
-        print('dff.loc[zone][dff.columns[-1]', dff.loc[zone][dff.columns[-1]])
         fig.add_traces(
             go.Bar(x=[zone], y=[dff.loc[zone][dff.columns[-1]]], 
                 marker={'color': color}, showlegend=False)
         )
-
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
@@ -453,7 +434,6 @@ def update_figure(selected_zone, selected_hour):
     Output('wind-rose-10', 'figure'),
     Input('date-picker-single', 'date'))
 def update_figure_windrose(date):
-    print('in update_figure_windrose')
     print('date:',date)
     return plot_windrose(df_wind, 1, show_title=False),\
            plot_windrose(df_wind, 2, show_title=False),\
