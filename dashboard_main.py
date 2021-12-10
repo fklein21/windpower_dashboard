@@ -9,13 +9,12 @@ import dash_bootstrap_components as dbc
 from dash import dcc
 #import dash_html_components as html
 from dash import html
-from dash import dash_table
 import plotly.graph_objects as go
 import plotly.express as px
 
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 
-from predict_api import make_prediction
+#from predict_api import make_prediction
 
 
 
@@ -223,8 +222,8 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
 # LAYOUT
 ################################################################################
 day='2013-01-01'
-filename = 'api/prediction_for_dashboard.csv'
-filename_wind = 'api/prediction_wind_for_dashboard.csv'
+filename = 'prediction_for_dashboard.csv'
+filename_wind = 'prediction_wind_for_dashboard.csv'
 # df, df_wind = make_prediction(day)
 # df['HOUR'] = df['TIMESTAMP'].dt.hour
 # df_wind['WD100CARD'] = df_wind.WD100.apply(lambda x: degrees_to_cardinal(x))
@@ -240,13 +239,6 @@ df_wind = pd.read_csv(filename_wind)
 
 
 
-
-
-from sklearn import datasets
-df = pd.read_csv(filename)
-
-iris_raw = datasets.load_iris()
-iris = pd.DataFrame(iris_raw["data"], columns=iris_raw["feature_names"])
 
 
 def Header(name, app):

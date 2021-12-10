@@ -1,3 +1,41 @@
+# Windpower_Dashboard
+
+## Workflow for development
+
+1. Set up the environment
+2. Work in notebook to get acquainted with dash plots
+3. Work in app.py-File to create a dash
+4. Check if Dashboard is working locally with
+
+- ` $ python app.py`
+- ` $ gunicorn app:server`
+
+6. Deploy to Heroku
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # FlaskIntroduction
 
 This repo has been updated to work with `Python v3.8` and up.
