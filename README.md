@@ -12,7 +12,21 @@
 
 6. Deploy to Heroku
 
+### Requirements:
 
+- python = 3.8.11 (you can install it with `pyenv install 3.8.11`)
+
+Setup environment with:
+
+```console
+$ make setup
+```
+
+There are two requirement files in this template: 
+1. **requirements_dev.txt** This is the requirements file you can use locally to set everything up and develop the dashboard. You can add as much here as you want to. 
+2. **requirements.txt** This is the requirements that Heroku uses. Because Memory for the App is very limited it should not contain the development environment (e.g. jupyter) and as few libraries as possible.
+
+You should work with python 3.8.11, this is the version that Heroku is currently (July 2021, check heroku documentation for updates) using .
 
 
 
