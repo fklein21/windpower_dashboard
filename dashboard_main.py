@@ -29,6 +29,16 @@ def card_sorter(column):
     correspondence = {card: order for order, card in enumerate(wd_card)}
     return column.map(correspondence)
 
+def get_data(day):
+    day +=' 1:00:00'
+    forecast_start = pd.to_datetime(day)
+    forecast_end = forecast_start + pd.Timedelta(value=23, unit='hour')
+    retro_start = forecast_start - pd.Timedelta(value=24, unit='hour')
+    retro_end = retro_start + pd.Timedelta(value=23, unit='hour')
+    data_forecast = data[(data['TIMESTAMP']>=forecast_start) & (data['TIMESTAMP']<=forecast_end)]
+    data_retro = data[(data['TIMESTAMP']>=retro_start) & (data['TIMESTAMP']<=retro_end)]
+    return data_forecast, data_retro
+
 ## get the required data
 def get_wind_forecast():
     pass
@@ -180,18 +190,6 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
 ################################################################################
 # LAYOUT
 ################################################################################
-day='2013-01-01'
-filename = 'prediction_for_dashboard.csv'
-filename_wind = 'prediction_wind_for_dashboard.csv'
-# df, df_wind = make_prediction(day)
-# df['HOUR'] = df['TIMESTAMP'].dt.hour
-# df_wind['WD100CARD'] = df_wind.WD100.apply(lambda x: degrees_to_cardinal(x))
-# print(df_wind.head())
-# df.to_csv(filename,index=False)
-# df_wind.to_csv(filename_wind,index=False)
-df = pd.read_csv(filename)
-df_wind = pd.read_csv(filename_wind)
-# df_targetvar_yesterday ...
 
 
 def Header(name, app):
@@ -432,6 +430,23 @@ def update_figure_windrose(date):
            plot_windrose(df_wind, 9, show_title=False),\
            plot_windrose(df_wind, 10, show_title=False)
 
+
+
+################################################################################
+# VALUES FOR TESTING THE LAYOUT AND GRAPHS
+################################################################################
+day='2013-01-01'
+filename = 'prediction_for_dashboard.csv'
+filename_wind = 'prediction_wind_for_dashboard.csv'
+# df, df_wind = make_prediction(day)
+# df['HOUR'] = df['TIMESTAMP'].dt.hour
+# df_wind['WD100CARD'] = df_wind.WD100.apply(lambda x: degrees_to_cardinal(x))
+# print(df_wind.head())
+# df.to_csv(filename,index=False)
+# df_wind.to_csv(filename_wind,index=False)
+df = pd.read_csv(filename)
+df_wind = pd.read_csv(filename_wind)
+# df_targetvar_yesterday ...
 
 # Add the server clause:
 if __name__ == "__main__":
