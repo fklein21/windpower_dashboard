@@ -249,8 +249,13 @@ controls = dbc.Card(
 ## sidebar  with controls for date, zone
 sidebar = html.Div(
     [
-        html.H2('Parameter', style=TEXT_STYLE),
+        html.H2("Parameter", className="display-4"),
         html.Hr(),
+        html.P(
+            "Choose date and zone for forecast", className="lead"
+        ),
+        # html.H2('Parameter', style=TEXT_STYLE),
+        # html.Hr(),
         controls
     ],
     #style=SIDEBAR_STYLE,
@@ -268,28 +273,15 @@ slider_hour = dcc.Slider(
 )
 
 figure_energy_per_hour = dcc.Graph(id="figure-energy-per-hour")
-maincontent_tab_1 = dbc.Container( 
+maincontent_tab_1 = html.Div( 
     [
-        dbc.Row( 
-            [ 
-                dbc.Col( 
-                    [ 
-                        sidebar,
-                    ], md=3,
-                ),
-                dbc.Col( 
-                    [
-                        figure_energy_24h,
-                        slider_hour,
-                        figure_energy_per_hour
-                    ], md=9,
-                )
-            ]
-        )
-    ], fluid=True,
+        figure_energy_24h,
+        slider_hour,
+        figure_energy_per_hour,
+    ], 
 )
 
-maincontent_tab_2 = dbc.Container( 
+maincontent_tab_3 = dbc.Container( 
     [   
         html.Div(""),
         dbc.Row( 
@@ -371,19 +363,53 @@ maincontent_tab_2 = dbc.Container(
     ]
 )
 
-app.layout = html.Div( 
+maincontent_tab_2 = dbc.Container( 
+    [
+        dbc.Row( 
+            [ 
+                dbc.Col( 
+                    [
+                        dcc.Graph(id='energy-day-cumulative')
+                    ], md=9,
+                )
+            ]
+        )
+    ], fluid=True,
+)
+
+title_and_tabs = html.Div( 
     [
         Header("Energy Output Forecast for the Next 24 Hours", app),
         html.Hr(),
         dbc.Tabs( 
             [ 
                 dbc.Tab(maincontent_tab_1, label="Forecast Energy Output", tab_id="tab-energy-forecast"),
-                dbc.Tab(maincontent_tab_2, label="Wind Strength and Direction", tab_id="tab-wind-roses"),
+                dbc.Tab(maincontent_tab_2, label="Cumulated_Energy_Output", tab_id="tab-energy-cumulated"),
+                dbc.Tab(maincontent_tab_3, label="Wind Strength and Direction", tab_id="tab-wind-roses"),
             ],
             id="tabs",
             active_tab="tab-energy-forecast"
         )
     ]
+)
+
+app.layout = dbc.Container( 
+    [
+        dbc.Row( 
+            [ 
+                dbc.Col( 
+                    [ 
+                        sidebar,
+                    ], md=3,
+                ),
+                dbc.Col( 
+                    [
+                        title_and_tabs,
+                    ], md=9,
+                )
+            ]
+        )
+    ], fluid=True,
 )
 ################################################################################
 # INTERACTION CALLBACKS
