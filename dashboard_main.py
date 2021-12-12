@@ -305,9 +305,11 @@ sidebar = html.Div(
         ),
         # html.H2('Parameter', style=TEXT_STYLE),
         # html.Hr(),
-        controls
+        controls,
+        html.Br(),
+        dcc.Link('Use your own weather forecast"', href='/own-forecast')
     ],
-    #style=SIDEBAR_STYLE,
+    style=SIDEBAR_STYLE,
 )
 
 title_tab_1 = html.Div('Projected Energy Output', id="title-tab-1")
