@@ -57,6 +57,10 @@ def load_model(filename=MODEL_PATH):
 def make_prediction(day='', modelpath=MODEL_PATH, zone=-1):
     model = load_model(modelpath)
 
+    ## Call randforest models
+    #if zone in range(10):
+    #    load_model('../models/randomforest{}'.format(zone))
+    
     # if int(zone) != -1:
     #     data = load_data_day(DATA_PATH, day, zone)
     #     pred = model.predict(data)
@@ -81,7 +85,7 @@ def make_prediction(day='', modelpath=MODEL_PATH, zone=-1):
         temp = [round(x,2) for x in temp]
         temp = pd.Series(temp, name='Zone '+str(zone))
         df_pred = pd.concat([df_pred, temp], axis=1)
-
+        print('WIND :',data_wind.head())
     return df_pred, data_wind
 
 if __name__ == "__main__":
