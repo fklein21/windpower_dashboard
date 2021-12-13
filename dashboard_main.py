@@ -643,6 +643,8 @@ def update_data(date):
 
 
 @app.callback(Output('output-data-upload', 'children'),
+              Output('own_wind_forecast', 'data'),
+              Output('own_power_yesterday', 'data'),
               Input('upload-data', 'contents'),
               State('upload-data', 'filename'),
               State('upload-data', 'last_modified'))
@@ -651,10 +653,10 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        return children
+        return children, 
 
 # Update the index
-@app.callback(dash.dependencies.Output('page-content', 'children'),
+@app.callback(Output('page-content', 'children'),
               [dash.dependencies.Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/':
