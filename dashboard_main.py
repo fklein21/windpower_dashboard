@@ -10,9 +10,26 @@ from dash import html
 import plotly.graph_objects as go
 import plotly.express as px
 
+from PIL import ImageColor
+
 from dash.dependencies import Input, Output
 
+pd.options.mode.chained_assignment = None  # default='warn'
+
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+
+
+################################################################################
+# DEFAULT VALUES FOR FILE NAMES, ...
+################################################################################
+
+features_forecast = ['ZONEID', 'TIMESTAMP', 'HOUR', 'WEEKDAY', 'WS100', 'WD100']
+features_retro = ['ZONEID', 'TIMESTAMP', 'HOUR', 'WEEKDAY', 'TARGETVAR']
+
+PATH_PREDICTIONS = 'RandomForest_Predictions.csv'
+PATH_DATA_ALL = 'raw_data_incl_features_test.csv'
+
+initial_date = '2013-07-01'
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -29,19 +46,29 @@ def card_sorter(column):
     correspondence = {card: order for order, card in enumerate(wd_card)}
     return column.map(correspondence)
 
-def get_data(day):
-    day +=' 1:00:00'
-    forecast_start = pd.to_datetime(day)
-    forecast_end = forecast_start + pd.Timedelta(value=23, unit='hour')
-    retro_start = forecast_start - pd.Timedelta(value=24, unit='hour')
-    retro_end = retro_start + pd.Timedelta(value=23, unit='hour')
-    data_forecast = data[(data['TIMESTAMP']>=forecast_start) & (data['TIMESTAMP']<=forecast_end)]
-    data_retro = data[(data['TIMESTAMP']>=retro_start) & (data['TIMESTAMP']<=retro_end)]
-    return data_forecast, data_retro
+def add_HOUR_column(df):
+    if 'HOUR' not in df.columns and 'TIMESTAMP' in df.columns:
+        df['HOUR'] = df['TIMESTAMP'].dt.hour
+    if 'HOUR' in df.columns:
+        df['HOUR'].replace({0 : 24}, inplace=True)
 
 ## get the required data
-def get_wind_forecast():
-    pass
+def get_data(day, 
+             data,
+             features=None,
+             delta_days=None):
+    day +=' 1:00:00'
+    time_start = pd.to_datetime(day)
+    time_end = time_start + pd.Timedelta(value=23, unit='hour')
+    if delta_days is not None:
+        time_delta = pd.Timedelta(value=1, unit='day')
+        time_start += time_delta*delta_days
+        time_end += time_delta*delta_days
+    data = data[(data['TIMESTAMP']>=time_start) & (data['TIMESTAMP']<=time_end)]
+    if features is not None and len(features)>0:
+        if all(x in data.columns for x in features):
+            data = data[features]
+    return data
 
 ################################################################################
 # APP INITIALIZATION
@@ -88,14 +115,17 @@ CARD_TEXT_STYLE = {
 ## get color scheme right
 colors = px.colors.qualitative.Plotly
 color_dict = {'Zone '+str(z): c for z,c in zip(range(1,11), colors)}
+color_dict_light = { k:ImageColor.getcolor(v, "RGB") for k,v in color_dict.items()}
+color_dict_light = { k:"rgba({}, {}, {}, {})".format(v[0], v[1], v[2], 0.4) for k,v in color_dict_light.items()}
 
-def get_figure_24h(dff, selected_zone, selected_hour=0):
+
+def get_figure_24h(df, selected_zone, selected_hour=1):
     tmin, tmax = 1,24
     fig = go.Figure()
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     for column in selected_zone:
         color = color_dict[column]
-        fig.add_traces(go.Scatter(x=dff['HOUR'], y = df[column], 
+        fig.add_traces(go.Scatter(x=df['HOUR'], y = df[column], 
             mode = 'lines', line=dict(color=color), name=column)
         )
     fig.update_xaxes(range = [tmin, tmax])
@@ -138,20 +168,19 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     return fig
 
 ## wind rose
-def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
-    df = df[df['ZONEID']==selected_zone_nr]
+def get_figure_windrose(df, selected_zone='Zone 1', show_legend=False, show_title=True):
+    dfz = df[df['ZONEID']==selected_zone]
     bins = np.linspace(0,24,13)
     labels = range(0,23,2)
-
-    df['WS100BIN'] = pd.cut(df['WS100'], bins=bins, labels = labels)
-    df_grouped = df.groupby(['WD100CARD','WS100BIN']).count().reset_index()
+    dfz['WS100BIN'] = pd.cut(dfz['WS100'], bins=bins, labels = labels)
+    dfz_grouped = dfz.groupby(['WD100CARD','WS100BIN']).count().reset_index()
     wd_card=["N","NNE","NE","ENE","E","ESE", "SE", "SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
     wd_zeros = np.zeros(len(wd_card))
     df_all_wd_card = pd.DataFrame([wd_card, wd_zeros, wd_zeros])
     df_all_wd_card = df_all_wd_card.T
     df_all_wd_card.columns = ['WD100CARD', 'WS100BIN', 'FREQUENCY']
     
-    data_wind = df_grouped[['WD100CARD', 'WS100BIN', 'TIMESTAMP']]
+    data_wind = dfz_grouped[['WD100CARD', 'WS100BIN', 'TIMESTAMP']]
     data_wind.columns = df_all_wd_card.columns
 
     datax = pd.concat([data_wind, df_all_wd_card], axis = 0)
@@ -173,19 +202,39 @@ def plot_windrose(df, selected_zone_nr=1, show_legend=False, show_title=True):
         autosize=True,
         width=300,
         height=300,
-        margin=dict(
-            l=30,
-            r=30,
-            b=30,
-            t=50,
-            pad=4
-        )
+        margin=dict(l=30, r=30, b=30, t=50, pad=4)
     )
     if show_title:
         fig.update_layout( 
-            title='Zone '+str(selected_zone_nr)
+            title=selected_zone
         )
     return fig
+
+def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
+    selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
+    # forecast data
+    df_f = pd.DataFrame(df_forecast[selected_zone].mean())
+    df_f.columns = ['TARGETVAR']
+    # yesterday's data
+    df_y = df_yesterday.groupby('ZONEID').mean()
+    
+    fig = go.Figure()
+    for zone in selected_zone:
+        color = color_dict[zone]
+        fig.add_traces(
+            go.Bar(x=[zone, zone+' yesterday'], 
+                y=[df_f.loc[zone]['TARGETVAR'], df_y.loc[zone]['TARGETVAR']],
+                marker={'color': [color_dict[zone], color_dict_light[zone]]}, 
+                showlegend=False
+            )
+        )
+    fig.update_yaxes(range = [0,1])
+    fig.layout.template = 'plotly_white'
+    fig.update_layout( 
+            title='Accumulated Energy Output over the whole day')
+    return fig
+
+
 
 ################################################################################
 # LAYOUT
@@ -212,7 +261,7 @@ controls = dbc.Card(
                         id='date-picker-single',
                         min_date_allowed=date(2013, 7, 1),
                         max_date_allowed=date(2013, 12, 31),
-                        initial_visible_month=date(2013, 7, 5),
+                        initial_visible_month=date(2013, 7, 1),
                         date=date(2013, 7, 1)
                     ),
                 ),
@@ -256,9 +305,11 @@ sidebar = html.Div(
         ),
         # html.H2('Parameter', style=TEXT_STYLE),
         # html.Hr(),
-        controls
+        controls,
+        html.Br(),
+        dcc.Link('Use your own weather forecast"', href='/own-forecast')
     ],
-    #style=SIDEBAR_STYLE,
+    style=SIDEBAR_STYLE,
 )
 
 title_tab_1 = html.Div('Projected Energy Output', id="title-tab-1")
@@ -266,9 +317,9 @@ figure_energy_24h = dcc.Graph(id='figure-energy-24h')
 slider_hour = dcc.Slider( 
     id='slider-hour',
     min=1,
-    max=23,
+    max=24,
     value=1,
-    marks={str(hh): str(hh) for hh in range(1,24)},
+    marks={str(hh): str(hh) for hh in range(1,25)},
     step=None
 )
 
@@ -363,29 +414,23 @@ maincontent_tab_3 = dbc.Container(
     ]
 )
 
-maincontent_tab_2 = dbc.Container( 
+maincontent_tab_2 = html.Div( 
     [
-        dbc.Row( 
-            [ 
-                dbc.Col( 
-                    [
-                        dcc.Graph(id='energy-day-cumulative')
-                    ], md=9,
-                )
-            ]
-        )
-    ], fluid=True,
+        dcc.Graph(id='energy-day-cumulative')
+    ]
 )
 
 title_and_tabs = html.Div( 
     [
         Header("Energy Output Forecast for the Next 24 Hours", app),
-        html.Hr(),
         dbc.Tabs( 
             [ 
-                dbc.Tab(maincontent_tab_1, label="Forecast Energy Output", tab_id="tab-energy-forecast"),
-                dbc.Tab(maincontent_tab_2, label="Cumulated_Energy_Output", tab_id="tab-energy-cumulated"),
-                dbc.Tab(maincontent_tab_3, label="Wind Strength and Direction", tab_id="tab-wind-roses"),
+                dbc.Tab(maincontent_tab_1, 
+                    label="Forecast Energy Output", tab_id="tab-energy-forecast"),
+                dbc.Tab(maincontent_tab_2, 
+                    label="Cumulated_Energy_Output", tab_id="tab-energy-cumulated"),
+                dbc.Tab(maincontent_tab_3, 
+                    label="Wind Strength and Direction", tab_id="tab-wind-roses"),
             ],
             id="tabs",
             active_tab="tab-energy-forecast"
@@ -408,7 +453,11 @@ app.layout = dbc.Container(
                     ], md=9,
                 )
             ]
-        )
+        ),
+        # dcc.Store stores the intermediate value
+        dcc.Store(id='data_wind_forecast'),
+        dcc.Store(id='data_power_forecast'),
+        dcc.Store(id='data_power_yesterday'),
     ], fluid=True,
 )
 ################################################################################
@@ -418,18 +467,30 @@ app.layout = dbc.Container(
 @app.callback(
     Output('figure-energy-24h', "figure"),
     Input('zone-selector', 'value'),
-    Input('slider-hour', 'value'))
-def update_graphs(selected_zone, selected_hour):
-    cols = selected_zone.copy()
-    cols.append('TIMESTAMP')
+    Input('slider-hour', 'value'),
+    Input('data_power_forecast', 'data'))
+def update_graphs(selected_zone, selected_hour, data_power_forecast):
+    df = pd.read_json(data_power_forecast)
     return get_figure_24h(df, selected_zone, selected_hour)
 
 @app.callback(
     Output('figure-energy-per-hour', 'figure'),
     Input('zone-selector', 'value'),
-    Input('slider-hour', 'value'))
-def update_figure(selected_zone, selected_hour):
+    Input('slider-hour', 'value'),
+    Input('data_power_forecast', 'data'))
+def update_figure(selected_zone, selected_hour, data_power_forecast):
+    df = pd.read_json(data_power_forecast)
     return get_figure_energy_per_hour(df, selected_zone, selected_hour)
+
+@app.callback(
+    Output('energy-day-cumulative', "figure"),
+    Input('zone-selector', 'value'),
+    Input('data_power_forecast', 'data'),
+    Input('data_power_yesterday', 'data'))
+def update_figure_cumulated_energy(selected_zone, data_power_forecast, data_power_yesterday):
+    df_forecast = pd.read_json(data_power_forecast)
+    df_yesterday = pd.read_json(data_power_yesterday)
+    return get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone)
 
 @app.callback(
     Output('wind-rose-1', 'figure'),
@@ -442,38 +503,70 @@ def update_figure(selected_zone, selected_hour):
     Output('wind-rose-8', 'figure'),
     Output('wind-rose-9', 'figure'),
     Output('wind-rose-10', 'figure'),
+    Input('data_wind_forecast', 'data'))
+def update_figure_windrose(data_wind):
+    df_wind = pd.read_json(data_wind)
+    return get_figure_windrose(df_wind, 'Zone 1', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 2', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 3', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 4', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 5', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 6', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 7', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 8', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 9', show_title=False),\
+           get_figure_windrose(df_wind, 'Zone 10', show_title=False)
+
+@app.callback(
+    Output('data_wind_forecast', 'data'),
+    Output('data_power_forecast', 'data'),
+    Output('data_power_yesterday', 'data'),
     Input('date-picker-single', 'date'))
-def update_figure_windrose(date):
-    print('date:',date)
-    return plot_windrose(df_wind, 1, show_title=False),\
-           plot_windrose(df_wind, 2, show_title=False),\
-           plot_windrose(df_wind, 3, show_title=False),\
-           plot_windrose(df_wind, 4, show_title=False),\
-           plot_windrose(df_wind, 5, show_title=False),\
-           plot_windrose(df_wind, 6, show_title=False),\
-           plot_windrose(df_wind, 7, show_title=False),\
-           plot_windrose(df_wind, 8, show_title=False),\
-           plot_windrose(df_wind, 9, show_title=False),\
-           plot_windrose(df_wind, 10, show_title=False)
+def update_data(date):
+    data_wind_forecast = get_data(
+        date, 
+        data=data_all,
+        features=features_forecast,
+        delta_days=None)
+    data_wind_forecast['WD100CARD'] = data_wind_forecast.WD100.apply(
+        lambda x: degrees_to_cardinal(x))
+    data_power_forecast = get_data(
+        date,
+        data=data_forecast,
+        features=None)
+    data_power_yesterday = get_data( 
+        date,
+        data=data_all,
+        features=features_retro, 
+        delta_days=-1
+    )
+    return data_wind_forecast.to_json(),\
+           data_power_forecast.to_json(),\
+           data_power_yesterday.to_json()
+
+
 
 
 
 ################################################################################
 # VALUES FOR TESTING THE LAYOUT AND GRAPHS
 ################################################################################
-day='2013-01-01'
-filename = 'prediction_for_dashboard.csv'
-filename_wind = 'prediction_wind_for_dashboard.csv'
+
 # df, df_wind = make_prediction(day)
 # df['HOUR'] = df['TIMESTAMP'].dt.hour
 # df_wind['WD100CARD'] = df_wind.WD100.apply(lambda x: degrees_to_cardinal(x))
 # print(df_wind.head())
 # df.to_csv(filename,index=False)
 # df_wind.to_csv(filename_wind,index=False)
-df = pd.read_csv(filename)
-df_wind = pd.read_csv(filename_wind)
-# df_targetvar_yesterday ...
+data_forecast = pd.read_csv(PATH_PREDICTIONS, parse_dates=['TIMESTAMP'])
+add_HOUR_column(data_forecast)
+data_all = pd.read_csv(PATH_DATA_ALL, parse_dates=['TIMESTAMP'])
+data_all.interpolate(method='bfill', inplace=True)
+data_all['ZONEID'] = data_all['ZONEID'].apply(lambda x: 'Zone '+str(x))
+data_all.reset_index(inplace=True)
+
 
 # Add the server clause:
 if __name__ == "__main__":
     app.run_server()
+    pass
