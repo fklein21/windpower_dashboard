@@ -119,6 +119,36 @@ color_dict_light = { k:ImageColor.getcolor(v, "RGB") for k,v in color_dict.items
 color_dict_light = { k:"rgba({}, {}, {}, {})".format(v[0], v[1], v[2], 0.4) for k,v in color_dict_light.items()}
 
 
+def get_figure_windspeed(df, selected_zone, selected_hour=1):
+    print(df.head())
+    print("WIND")
+    tmin, tmax = 1,24
+    fig = go.Figure()
+    selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
+    
+    for column in selected_zone:
+        df_zone = df[df['ZONEID'] == column]
+        color = color_dict[column]
+        fig.add_traces(go.Scatter(x=df_zone['HOUR'], y = df_zone['WS100'], #df[column], 
+            mode = 'lines', line=dict(color=color), name=column)
+        )
+    fig.update_xaxes(range = [tmin, tmax])
+    fig.update_yaxes(range = [0,24])
+    fig.layout.template = 'plotly_white'
+    fig.layout.showlegend = True
+    fig.add_shape(type="line",
+        x0=selected_hour, y0=0, x1=selected_hour, y1=24,
+        line=dict(
+            color="red",
+            width=1,
+            dash="dash",
+        )
+    )
+    fig.update_layout( 
+            title='Windspeed over 24 hours')
+    return fig
+
+
 def get_figure_24h(df, selected_zone, selected_hour=1):
     tmin, tmax = 1,24
     fig = go.Figure()
@@ -324,13 +354,17 @@ slider_hour = dcc.Slider(
 )
 
 figure_energy_per_hour = dcc.Graph(id="figure-energy-per-hour")
+figure_windspeed = dcc.Graph(id="figure-windspeed")
 maincontent_tab_1 = html.Div( 
     [
         figure_energy_24h,
         slider_hour,
         figure_energy_per_hour,
+        figure_windspeed
     ], 
 )
+
+
 
 maincontent_tab_3 = dbc.Container( 
     [   
@@ -473,6 +507,18 @@ def update_graphs(selected_zone, selected_hour, data_power_forecast):
     df = pd.read_json(data_power_forecast)
     return get_figure_24h(df, selected_zone, selected_hour)
 
+
+@app.callback(
+    Output('figure-windspeed', "figure"),
+    Input('zone-selector', 'value'),
+    Input('slider-hour', 'value'),
+    Input('data_wind_forecast', 'data'))   
+
+def update_windspeed(selected_zone, selected_hour, data_wind_forecast):
+    df = pd.read_json(data_wind_forecast)
+    return get_figure_windspeed(df, selected_zone, selected_hour)
+  
+
 @app.callback(
     Output('figure-energy-per-hour', 'figure'),
     Input('zone-selector', 'value'),
@@ -563,6 +609,7 @@ add_HOUR_column(data_forecast)
 data_all = pd.read_csv(PATH_DATA_ALL, parse_dates=['TIMESTAMP'])
 data_all.interpolate(method='bfill', inplace=True)
 data_all['ZONEID'] = data_all['ZONEID'].apply(lambda x: 'Zone '+str(x))
+data_all['HOUR'].replace(0,24, inplace=True)
 data_all.reset_index(inplace=True)
 
 
