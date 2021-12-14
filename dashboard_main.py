@@ -453,7 +453,7 @@ title_and_tabs = html.Div(
                 dbc.Tab(maincontent_tab_1, 
                     label="Forecast Energy Output", tab_id="tab-energy-forecast"),
                 dbc.Tab(maincontent_tab_2, 
-                    label="Cumulated_Energy_Output", tab_id="tab-energy-cumulated"),
+                    label="Cumulated Energy Output", tab_id="tab-energy-cumulated"),
                 dbc.Tab(maincontent_tab_3, 
                     label="Wind Strength and Direction", tab_id="tab-wind-roses"),
             ],
