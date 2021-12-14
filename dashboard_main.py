@@ -1,6 +1,7 @@
 from io import SEEK_CUR
 import pandas as pd
 import numpy as np
+import os
 
 import dash
 from datetime import date
@@ -10,9 +11,11 @@ from dash import html
 import plotly.graph_objects as go
 import plotly.express as px
 
+import base64
+
 from PIL import ImageColor
 
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -30,6 +33,10 @@ PATH_PREDICTIONS = 'RandomForest_Predictions.csv'
 PATH_DATA_ALL = 'raw_data_incl_features_test.csv'
 
 initial_date = '2013-07-01'
+
+image_filename = os.getcwd() + '/Windrose_legend.png' # replace with your own image
+encoded_image = base64.b64encode(open(image_filename, 'rb').read())
+
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -122,6 +129,8 @@ color_dict_light = { k:"rgba({}, {}, {}, {})".format(v[0], v[1], v[2], 0.4) for 
 def get_figure_windspeed(df, selected_zone, selected_hour=1):
     tmin, tmax = 1,24
     fig = go.Figure()
+    if selected_zone is None:
+        selected_zone = []
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     
     for column in selected_zone:
@@ -141,8 +150,6 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
             dash="dash",
         )
     )
-    #fig.update_layout( 
-    #        title='Windspeed over 24 hours')
     fig.update_layout( 
             title='Windspeed over 24 hours',
             xaxis = dict(
@@ -150,7 +157,6 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
                 tickvals = [1, 2,3, 4,5, 6,7, 8,9, 10,11, 12,13, 14,15, 16,17, 18,19,20,21,22,23,24],
                 ticktext = ['1:00', '2:00','3:00', '4:00','5:00','6:00', '7:00','8:00', '9:00','10:00' ,'11:00','12:00', '13:00','14:00' ,'15:00','16:00', '17:00','18:00', '19:00',
                            '20:00', '21:00','22:00', '23:00', '24.00'],
-                #yaxis_title="Windspeed in m/s",           
                 tickangle = 45,             
             ),
 
@@ -162,6 +168,8 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
 
 
 def get_figure_24h(df, selected_zone, selected_hour=1):
+    if selected_zone is None:
+        selected_zone = []
     tmin, tmax = 0,24
     fig = go.Figure()
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
@@ -207,6 +215,8 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
 
 ## get figure for the energy per hour graph 
 def get_figure_energy_per_hour(df, selected_zone, selected_hour):
+    if selected_zone is None:
+        selected_zone = []
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     df_hour = pd.DataFrame(df[df['HOUR']==selected_hour])
     df_hour = df_hour[selected_zone]
@@ -261,7 +271,6 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
 
     fig = px.bar_polar(datax, 
         r="FREQUENCY", 
-        #theta="WD100CARD",
         theta="Winddirection",
         color="Windspeed", 
         color_discrete_sequence= px.colors.sequential.Plasma_r,
@@ -280,29 +289,19 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
     return fig
 
 def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
+    if selected_zone is None:
+        selected_zone = []
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     # forecast data
     df_f = pd.DataFrame(df_forecast[selected_zone].mean())
     df_f.columns = ['TARGETVAR']
     # yesterday's data
     df_y = df_yesterday.groupby('ZONEID').mean()
-    
-    # fig = go.Figure()
-    # for zone in selected_zone:
-    #     color = color_dict[zone]
-    #     fig.add_traces(
-    #         go.Bar(x=[zone, zone+' yesterday'], 
-    #             y=[df_f.loc[zone]['TARGETVAR'], df_y.loc[zone]['TARGETVAR']],
-    #             marker={'color': [color_dict[zone], color_dict_light[zone]]}, 
-    #             showlegend=False
-    #         )
-    #     )
 
     data = {
         "Today": [df_f.loc[zone]['TARGETVAR'] for zone in selected_zone],
         "Yesterday" :[df_y.loc[zone]['TARGETVAR'] for zone in selected_zone],
-        "labels": ['Windfarm'+str(n) for n in range(1,11)]    
-        
+        "labels": selected_zone,
     }
 
     fig = go.Figure(
@@ -311,19 +310,17 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
             name="Today",
             x=data["labels"],
             y=data["Today"],
-            #offsetgroup=0,
         ),
 
         go.Bar(
             name="Yesterday",
             x=data["labels"],
             y=data["Yesterday"],
-            #offsetgroup=0.1,
         ),
     ],
     layout=go.Layout(
         title="Issue Types - Original and Models",
-        yaxis_title="Cumulative Energy output in %",
+        yaxis_title="Cumulative Energy Output in %",
         #barmode = 'overlay'
     )
 )
@@ -393,9 +390,14 @@ controls = dbc.Card(
                         {"label": "Wind Farm 9", "value": "Wind Farm 9"},
                         {"label": "Wind Farm 10", "value": "Wind Farm 10"},
                     ],
-                    value=["Wind Farm 1", "Wind Farm 2", "Wind Farm 3", "Wind Farm 4", "Wind Farm 5",
-                        "Wind Farm 6", "Wind Farm 7", "Wind Farm 8", "Wind Farm 9", "Wind Farm 10", ],
+                    value=[],
                     id="zone-selector",
+                ),
+                html.Hr(),
+                dbc.Checklist(
+                    id="all-or-none",
+                    options=[{"label": "Select all", "value": "Select all"}],
+                    value=[]
                 ),
             ]
         ),
@@ -405,13 +407,9 @@ controls = dbc.Card(
 ## sidebar  with controls for date, zone
 sidebar = html.Div(
     [
-        #html.H2("Parameter", className="display-4"),
-        #html.Hr(),
         html.P(
             "Choose date and zone for forecast", className="lead"
         ),
-        # html.H2('Parameter', style=TEXT_STYLE),
-        # html.Hr(),
         controls,
     ],
     style=SIDEBAR_STYLE,
@@ -424,13 +422,6 @@ slider_hour = dcc.Slider(
     min=1,
     max=24,
     value=1,
-    #marks={str(hh): str(hh) for hh in range(1,25)},
-    # marks={
-    #     1: {'label': '1:00'},
-    #     2: {'label': '2:00'},
-    #     3: {'label': '3:00'},
-    #     4: {'label': '4:00'}
-    # },
     
     marks = {n : str(n)+':00' for n in range(1,25)},
     step=None
@@ -441,6 +432,7 @@ figure_windspeed = dcc.Graph(id="figure-windspeed")
 maincontent_tab_1 = html.Div( 
     [
         figure_energy_24h,
+        html.Div('Choose to view hourly forecast in detail:', id='slider-text', style={"margin-bottom": "15px"}),
         slider_hour,
         figure_energy_per_hour,
         figure_windspeed
@@ -451,7 +443,11 @@ maincontent_tab_1 = html.Div(
 
 maincontent_tab_3 = dbc.Container( 
     [   
-        html.Div(""),
+        html.Div("", style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}),
+        html.Div([
+            html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()),
+            height=300)
+        ]),
         dbc.Row( 
             [ 
                 dbc.Col( 
@@ -464,14 +460,26 @@ maincontent_tab_3 = dbc.Container(
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Wind Farm 4"),
-                                dbc.CardBody(dcc.Graph(id="wind-rose-4", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                                dbc.CardHeader("Wind Farm 3"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-3", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Wind Farm 5"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-5", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
                                 dbc.CardHeader("Wind Farm 7"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-7", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Wind Farm 9"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-9", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                     ]
@@ -486,8 +494,14 @@ maincontent_tab_3 = dbc.Container(
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Wind Farm 5"),
-                                dbc.CardBody(dcc.Graph(id="wind-rose-5", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                                dbc.CardHeader("Wind Farm 4"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-4", style={'marginLeft': '1em', 'marginRight': '1em'})),
+                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
+                        ),
+                        dbc.Card( 
+                            [ 
+                                dbc.CardHeader("Wind Farm 6"),
+                                dbc.CardBody(dcc.Graph(id="wind-rose-6", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
@@ -500,28 +514,6 @@ maincontent_tab_3 = dbc.Container(
                             [ 
                                 dbc.CardHeader("Wind Farm 10"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-10", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                        ),
-                    ]
-                ), 
-                dbc.Col( 
-                    [ 
-                        dbc.Card( 
-                            [ 
-                                dbc.CardHeader("Wind Farm 3"),
-                                dbc.CardBody(dcc.Graph(id="wind-rose-3", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                        ),
-                        dbc.Card( 
-                            [ 
-                                dbc.CardHeader("Wind Farm 6"),
-                                dbc.CardBody(dcc.Graph(id="wind-rose-6", style={'marginLeft': '1em', 'marginRight': '1em'})),
-                            ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
-                        ),
-                        dbc.Card( 
-                            [ 
-                                dbc.CardHeader("Wind Farm 9"),
-                                dbc.CardBody(dcc.Graph(id="wind-rose-9", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                     ]
@@ -679,17 +671,23 @@ def update_data(date):
             return False, no_update, no_update
 
 
+@app.callback(
+    Output("zone-selector", "value"),
+    [Input("all-or-none", "value")],
+    [State("zone-selector", "options")],
+)
+def select_all_none(all_selected, options):
+    all_or_none = []
+    all_or_none = [option["value"] for option in options if all_selected]
+    return all_or_none
+
+
+
 
 ################################################################################
 # VALUES FOR TESTING THE LAYOUT AND GRAPHS
 ################################################################################
 
-# df, df_wind = make_prediction(day)
-# df['HOUR'] = df['TIMESTAMP'].dt.hour
-# df_wind['WD100CARD'] = df_wind.WD100.apply(lambda x: degrees_to_cardinal(x))
-# print(df_wind.head())
-# df.to_csv(filename,index=False)
-# df_wind.to_csv(filename_wind,index=False)
 data_forecast = pd.read_csv(PATH_PREDICTIONS, parse_dates=['TIMESTAMP'])
 data_forecast.rename(
     columns={x: 'Wind Farm '+x.split()[-1] 
