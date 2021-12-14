@@ -323,7 +323,7 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     ],
     layout=go.Layout(
         title="Issue Types - Original and Models",
-        yaxis_title="Accumulated Energy output in %",
+        yaxis_title="Cumulative Energy output in %",
         #barmode = 'overlay'
     )
 )
@@ -338,7 +338,7 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     )
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
-            title='Cumulated Energy Output over the whole day')
+            title='Cumulative Energy Output over the whole day')
     return fig
 
 
@@ -545,7 +545,7 @@ title_and_tabs = html.Div(
                 dbc.Tab(maincontent_tab_1, 
                     label="Forecast Energy Output", tab_id="tab-energy-forecast"),
                 dbc.Tab(maincontent_tab_2, 
-                    label="Cumulated Energy Output", tab_id="tab-energy-cumulated"),
+                    label="Cumulative Energy Output", tab_id="tab-energy-cumulated"),
                 dbc.Tab(maincontent_tab_3, 
                     label="Wind Strength (in m/s) and Direction", tab_id="tab-wind-roses"),
             ],
