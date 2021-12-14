@@ -203,12 +203,12 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
                 tickmode = 'array',
                 tickvals = [1, 2,3, 4,5, 6,7, 8,9, 10,11, 12,13, 14,15, 16,17, 18,19,20,21,22,23,24],
                 ticktext = ['1:00', '2:00','3:00', '4:00','5:00','6:00', '7:00','8:00', '9:00','10:00' ,'11:00','12:00', '13:00','14:00' ,'15:00','16:00', '17:00','18:00', '19:00',
-                           '20:00', '21:00','22:00', '23:00', '24.00']
+                           '20:00', '21:00','22:00', '23:00', '24:00']
             ),
 
         
             yaxis = dict(
-                title ='Windpower in %',
+                title ='Energy output in %',
             )
     )
     return fig
@@ -241,7 +241,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     fig.layout.template = 'plotly_white'
     
     fig.update_layout( 
-            title='Forecast Power Output at hour '+str(selected_hour))
+            title='At '+str(selected_hour))
     return fig
 
 ## wind rose
@@ -539,7 +539,7 @@ title_and_tabs = html.Div(
                 dbc.Tab(maincontent_tab_2, 
                     label="Cumulative Energy Output", tab_id="tab-energy-cumulated"),
                 dbc.Tab(maincontent_tab_3, 
-                    label="Wind Strength (in m/s) and Direction", tab_id="tab-wind-roses"),
+                    label="Wind speed (in m/s) and Direction", tab_id="tab-wind-roses"),
             ],
             id="tabs",
             active_tab="tab-energy-forecast"
