@@ -144,13 +144,28 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
             dash="dash",
         )
     )
+    #fig.update_layout( 
+    #        title='Windspeed over 24 hours')
     fig.update_layout( 
-            title='Windspeed over 24 hours')
+            title='Windspeed over 24 hours',
+            xaxis = dict(
+                tickmode = 'array',
+                tickvals = [1, 2,3, 4,5, 6,7, 8,9, 10,11, 12,13, 14,15, 16,17, 18,19,20,21,22,23,24],
+                ticktext = ['1:00', '2:00','3:00', '4:00','5:00','6:00', '7:00','8:00', '9:00','10:00' ,'11:00','12:00', '13:00','14:00' ,'15:00','16:00', '17:00','18:00', '19:00',
+                           '20:00', '21:00','22:00', '23:00', '24.00'],
+                #yaxis_title="Windspeed in m/s",           
+                tickangle = 45,             
+            ),
+
+            yaxis = dict(
+                title ='Windspeed in m/s',
+            )
+    )        
     return fig
 
 
 def get_figure_24h(df, selected_zone, selected_hour=1):
-    tmin, tmax = 1,24
+    tmin, tmax = 0,24
     fig = go.Figure()
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     for column in selected_zone:
@@ -159,6 +174,7 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
             mode = 'lines', line=dict(color=color), name=column)
         )
     fig.update_xaxes(range = [tmin, tmax])
+    
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
     fig.layout.showlegend = True
@@ -171,7 +187,19 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
         )
     )
     fig.update_layout( 
-            title='Forecast Power Output over 24 hours')
+            title='Forecast Power Output over 24 hours',
+            xaxis = dict(
+                tickmode = 'array',
+                tickvals = [1, 2,3, 4,5, 6,7, 8,9, 10,11, 12,13, 14,15, 16,17, 18,19,20,21,22,23,24],
+                ticktext = ['1:00', '2:00','3:00', '4:00','5:00','6:00', '7:00','8:00', '9:00','10:00' ,'11:00','12:00', '13:00','14:00' ,'15:00','16:00', '17:00','18:00', '19:00',
+                           '20:00', '21:00','22:00', '23:00', '24.00']
+            ),
+
+        
+            yaxis = dict(
+                title ='Windpower in %',
+            )
+    )
     return fig
 
 ## get figure for the energy per hour graph 
@@ -193,6 +221,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     )
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
+    
     fig.update_layout( 
             title='Forecast Power Output at hour '+str(selected_hour))
     return fig
@@ -202,29 +231,33 @@ def get_figure_windrose(df, selected_zone='Zone 1', show_legend=False, show_titl
     dfz = df[df['ZONEID']==selected_zone]
     bins = np.linspace(0,24,13)
     labels = range(0,23,2)
-    dfz['WS100BIN'] = pd.cut(dfz['WS100'], bins=bins, labels = labels)
-    dfz_grouped = dfz.groupby(['WD100CARD','WS100BIN']).count().reset_index()
+    dfz['Windspeed'] = pd.cut(dfz['WS100'], bins=bins, labels = labels)
+    dfz_grouped = dfz.groupby(['WD100CARD','Windspeed']).count().reset_index()
     wd_card=["N","NNE","NE","ENE","E","ESE", "SE", "SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
     wd_zeros = np.zeros(len(wd_card))
     df_all_wd_card = pd.DataFrame([wd_card, wd_zeros, wd_zeros])
     df_all_wd_card = df_all_wd_card.T
-    df_all_wd_card.columns = ['WD100CARD', 'WS100BIN', 'FREQUENCY']
+    df_all_wd_card.columns = ['WD100CARD', 'Windspeed', 'FREQUENCY']
     
-    data_wind = dfz_grouped[['WD100CARD', 'WS100BIN', 'TIMESTAMP']]
+    data_wind = dfz_grouped[['WD100CARD', 'Windspeed', 'TIMESTAMP']]
     data_wind.columns = df_all_wd_card.columns
 
     datax = pd.concat([data_wind, df_all_wd_card], axis = 0)
     datax = datax.sort_values(by='WD100CARD', key=card_sorter)
     ws_ls = np.arange(0,24,2)
     wind_all_speeds = pd.DataFrame([['N']*len(ws_ls), ws_ls, np.zeros(len(ws_ls))]).T
-    wind_all_speeds.columns = ['WD100CARD', 'WS100BIN', 'FREQUENCY']
+    wind_all_speeds.columns = ['WD100CARD', 'Windspeed', 'FREQUENCY']
+    wind_all_speeds.rename(columns = {"WD100CARD": "Winddirection"}, inplace=True)
     wind_all_speeds
+    df_all_wd_card.rename(columns = {"WD100CARD": "Winddirection"}, inplace=True) 
+    data_wind.rename(columns = {"WD100CARD": "Winddirection"}, inplace=True)
     datax = pd.concat([wind_all_speeds, df_all_wd_card, data_wind], axis = 0)
 
     fig = px.bar_polar(datax, 
         r="FREQUENCY", 
-        theta="WD100CARD",
-        color="WS100BIN", 
+        #theta="WD100CARD",
+        theta="Winddirection",
+        color="Windspeed", 
         color_discrete_sequence= px.colors.sequential.Plasma_r,
     )                     
     fig.layout.showlegend = show_legend
@@ -248,16 +281,47 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     # yesterday's data
     df_y = df_yesterday.groupby('ZONEID').mean()
     
-    fig = go.Figure()
-    for zone in selected_zone:
-        color = color_dict[zone]
-        fig.add_traces(
-            go.Bar(x=[zone, zone+' yesterday'], 
-                y=[df_f.loc[zone]['TARGETVAR'], df_y.loc[zone]['TARGETVAR']],
-                marker={'color': [color_dict[zone], color_dict_light[zone]]}, 
-                showlegend=False
-            )
-        )
+    # fig = go.Figure()
+    # for zone in selected_zone:
+    #     color = color_dict[zone]
+    #     fig.add_traces(
+    #         go.Bar(x=[zone, zone+' yesterday'], 
+    #             y=[df_f.loc[zone]['TARGETVAR'], df_y.loc[zone]['TARGETVAR']],
+    #             marker={'color': [color_dict[zone], color_dict_light[zone]]}, 
+    #             showlegend=False
+    #         )
+    #     )
+
+    data = {
+        "Today": [df_f.loc[zone]['TARGETVAR'] for zone in selected_zone],
+        "Yesterday" :[df_y.loc[zone]['TARGETVAR'] for zone in selected_zone],
+        "labels": ['Windfarm'+str(n) for n in range(1,11)]    
+        
+    }
+
+    fig = go.Figure(
+    data = [
+        go.Bar(
+            name="Today",
+            x=data["labels"],
+            y=data["Today"],
+            #offsetgroup=0,
+        ),
+
+        go.Bar(
+            name="Yesterday",
+            x=data["labels"],
+            y=data["Yesterday"],
+            #offsetgroup=0.1,
+        ),
+    ],
+    layout=go.Layout(
+        title="Issue Types - Original and Models",
+        yaxis_title="Accumulated Energy output in &",
+        #barmode = 'overlay'
+    )
+)
+
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
@@ -328,8 +392,8 @@ controls = dbc.Card(
 ## sidebar  with controls for date, zone
 sidebar = html.Div(
     [
-        html.H2("Parameter", className="display-4"),
-        html.Hr(),
+        #html.H2("Parameter", className="display-4"),
+        #html.Hr(),
         html.P(
             "Choose date and zone for forecast", className="lead"
         ),
@@ -349,7 +413,15 @@ slider_hour = dcc.Slider(
     min=1,
     max=24,
     value=1,
-    marks={str(hh): str(hh) for hh in range(1,25)},
+    #marks={str(hh): str(hh) for hh in range(1,25)},
+    # marks={
+    #     1: {'label': '1:00'},
+    #     2: {'label': '2:00'},
+    #     3: {'label': '3:00'},
+    #     4: {'label': '4:00'}
+    # },
+    
+    marks = {n : str(n)+':00' for n in range(1,25)},
     step=None
 )
 
@@ -464,7 +536,7 @@ title_and_tabs = html.Div(
                 dbc.Tab(maincontent_tab_2, 
                     label="Cumulated_Energy_Output", tab_id="tab-energy-cumulated"),
                 dbc.Tab(maincontent_tab_3, 
-                    label="Wind Strength and Direction", tab_id="tab-wind-roses"),
+                    label="Wind Strength (in m/s) and Direction", tab_id="tab-wind-roses"),
             ],
             id="tabs",
             active_tab="tab-energy-forecast"
@@ -528,6 +600,8 @@ def update_figure(selected_zone, selected_hour, data_power_forecast):
     df = pd.read_json(data_power_forecast)
     return get_figure_energy_per_hour(df, selected_zone, selected_hour)
 
+
+
 @app.callback(
     Output('energy-day-cumulative', "figure"),
     Input('zone-selector', 'value'),
@@ -589,8 +663,10 @@ def update_data(date):
     return data_wind_forecast.to_json(),\
            data_power_forecast.to_json(),\
            data_power_yesterday.to_json()
-
-
+    #### HOVER DATA
+    def display_hover(hoverData):
+        if hoverData is None:
+            return False, no_update, no_update
 
 
 
