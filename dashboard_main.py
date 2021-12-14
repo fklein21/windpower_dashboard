@@ -171,8 +171,14 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
             mode = 'lines', line=dict(color=color), name=column)
         )
     fig.update_xaxes(range = [tmin, tmax])
-    
     fig.update_yaxes(range = [0,1])
+    fig.update_layout(
+        yaxis = dict(
+            tickmode = 'array',
+            tickvals = [0, 0.2, 0.4, 0.6, 0.8, 1],
+            ticktext = ['0', '20', '40', '60', '80', '100']
+        )
+    )
     fig.layout.template = 'plotly_white'
     fig.layout.showlegend = True
     fig.add_shape(type="line",
@@ -215,6 +221,13 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
                 textposition='auto',)
     )
     fig.update_yaxes(range = [0,1])
+    fig.update_layout(
+        yaxis = dict(
+            tickmode = 'array',
+            tickvals = [0, 0.2, 0.4, 0.6, 0.8, 1],
+            ticktext = ['0', '20', '40', '60', '80', '100']
+        )
+    )
     fig.layout.template = 'plotly_white'
     
     fig.update_layout( 
@@ -310,12 +323,19 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     ],
     layout=go.Layout(
         title="Issue Types - Original and Models",
-        yaxis_title="Accumulated Energy output in &",
+        yaxis_title="Accumulated Energy output in %",
         #barmode = 'overlay'
     )
 )
 
     fig.update_yaxes(range = [0,1])
+    fig.update_layout(
+        yaxis = dict(
+            tickmode = 'array',
+            tickvals = [0, 0.2, 0.4, 0.6, 0.8, 1],
+            ticktext = ['0', '20', '40', '60', '80', '100']
+        )
+    )
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
             title='Cumulated Energy Output over the whole day')
