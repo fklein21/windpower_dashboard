@@ -114,23 +114,20 @@ CARD_TEXT_STYLE = {
 
 ## get color scheme right
 colors = px.colors.qualitative.Plotly
-color_dict = {'Zone '+str(z): c for z,c in zip(range(1,11), colors)}
+color_dict = {'Wind Farm '+str(z): c for z,c in zip(range(1,11), colors)}
 color_dict_light = { k:ImageColor.getcolor(v, "RGB") for k,v in color_dict.items()}
 color_dict_light = { k:"rgba({}, {}, {}, {})".format(v[0], v[1], v[2], 0.4) for k,v in color_dict_light.items()}
 
 
 def get_figure_windspeed(df, selected_zone, selected_hour=1):
-    print(df.head())
-    print("WIND")
     tmin, tmax = 1,24
     fig = go.Figure()
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
     
     for column in selected_zone:
         df_zone = df[df['ZONEID'] == column]
-        color = color_dict[column]
-        fig.add_traces(go.Scatter(x=df_zone['HOUR'], y = df_zone['WS100'], #df[column], 
-            mode = 'lines', line=dict(color=color), name=column)
+        fig.add_traces(go.Scatter(x=df_zone['HOUR'], y = df_zone['WS100'], 
+            mode = 'lines', line=dict(color=color_dict[column]), name=column)
         )
     fig.update_xaxes(range = [tmin, tmax])
     fig.update_yaxes(range = [0,24])
@@ -177,19 +174,17 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
 ## get figure for the energy per hour graph 
 def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     selected_zone = sorted(selected_zone, key=lambda x : x[-2:])
-    df_hour = df[selected_zone]
-    df_hour = pd.DataFrame(df_hour.loc[selected_hour:selected_hour])
-    cols = df_hour.columns
-    cols = [cc for cc in cols if cc.startswith('Zone')]
-    dff = df_hour[cols]
-    dff = dff.T
-    bars = []
+    df_hour = pd.DataFrame(df[df['HOUR']==selected_hour])
+    df_hour = df_hour[selected_zone]
     fig = go.Figure()
     for zone in selected_zone:
-        color = color_dict[zone]
         fig.add_traces(
-            go.Bar(x=[zone], y=[dff.loc[zone][dff.columns[-1]]], 
-                marker={'color': color}, showlegend=False)
+            go.Bar(
+                x=[zone], y=df_hour[zone], 
+                marker={'color': color_dict[zone]}, 
+                showlegend=False,
+                text=str(int(100*round(df_hour[zone],2)))+'%',
+                textposition='auto',)
     )
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
@@ -198,7 +193,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     return fig
 
 ## wind rose
-def get_figure_windrose(df, selected_zone='Zone 1', show_legend=False, show_title=True):
+def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show_title=True):
     dfz = df[df['ZONEID']==selected_zone]
     bins = np.linspace(0,24,13)
     labels = range(0,23,2)
@@ -213,8 +208,6 @@ def get_figure_windrose(df, selected_zone='Zone 1', show_legend=False, show_titl
     data_wind = dfz_grouped[['WD100CARD', 'WS100BIN', 'TIMESTAMP']]
     data_wind.columns = df_all_wd_card.columns
 
-    datax = pd.concat([data_wind, df_all_wd_card], axis = 0)
-    datax = datax.sort_values(by='WD100CARD', key=card_sorter)
     ws_ls = np.arange(0,24,2)
     wind_all_speeds = pd.DataFrame([['N']*len(ws_ls), ws_ls, np.zeros(len(ws_ls))]).T
     wind_all_speeds.columns = ['WD100CARD', 'WS100BIN', 'FREQUENCY']
@@ -261,7 +254,7 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     fig.update_yaxes(range = [0,1])
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
-            title='Accumulated Energy Output over the whole day')
+            title='Cumulated Energy Output over the whole day')
     return fig
 
 
@@ -302,22 +295,22 @@ controls = dbc.Card(
         html.Div(''),
         html.Div(
             [
-                dbc.Label("Zone selection:"),
+                dbc.Label("Wind Farm selection:"),
                 dbc.Checklist(
                     options=[
-                        {"label": "Zone 1", "value": "Zone 1"},
-                        {"label": "Zone 2", "value": "Zone 2"},
-                        {"label": "Zone 3", "value": "Zone 3"},
-                        {"label": "Zone 4", "value": "Zone 4"},
-                        {"label": "Zone 5", "value": "Zone 5"},
-                        {"label": "Zone 6", "value": "Zone 6"},
-                        {"label": "Zone 7", "value": "Zone 7"},
-                        {"label": "Zone 8", "value": "Zone 8"},
-                        {"label": "Zone 9", "value": "Zone 9"},
-                        {"label": "Zone 10", "value": "Zone 10"},
+                        {"label": "Wind Farm 1", "value": "Wind Farm 1"},
+                        {"label": "Wind Farm 2", "value": "Wind Farm 2"},
+                        {"label": "Wind Farm 3", "value": "Wind Farm 3"},
+                        {"label": "Wind Farm 4", "value": "Wind Farm 4"},
+                        {"label": "Wind Farm 5", "value": "Wind Farm 5"},
+                        {"label": "Wind Farm 6", "value": "Wind Farm 6"},
+                        {"label": "Wind Farm 7", "value": "Wind Farm 7"},
+                        {"label": "Wind Farm 8", "value": "Wind Farm 8"},
+                        {"label": "Wind Farm 9", "value": "Wind Farm 9"},
+                        {"label": "Wind Farm 10", "value": "Wind Farm 10"},
                     ],
-                    value=["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5",
-                        "Zone 6", "Zone 7", "Zone 8", "Zone 9", "Zone 10", ],
+                    value=["Wind Farm 1", "Wind Farm 2", "Wind Farm 3", "Wind Farm 4", "Wind Farm 5",
+                        "Wind Farm 6", "Wind Farm 7", "Wind Farm 8", "Wind Farm 9", "Wind Farm 10", ],
                     id="zone-selector",
                 ),
             ]
@@ -328,16 +321,14 @@ controls = dbc.Card(
 ## sidebar  with controls for date, zone
 sidebar = html.Div(
     [
-        html.H2("Parameter", className="display-4"),
-        html.Hr(),
-        html.P(
-            "Choose date and zone for forecast", className="lead"
-        ),
+        html.H2("Choose date and wind farm", style=TEXT_STYLE),
+        # html.Hr(),
+        # html.P(
+        #     "Choose date and wind farm for forecast", className="lead"
+        # ),
         # html.H2('Parameter', style=TEXT_STYLE),
         # html.Hr(),
         controls,
-        html.Br(),
-        dcc.Link('Use your own weather forecast"', href='/own-forecast')
     ],
     style=SIDEBAR_STYLE,
 )
@@ -375,19 +366,19 @@ maincontent_tab_3 = dbc.Container(
                     [ 
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 1"),
+                                dbc.CardHeader("Wind Farm 1"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-1", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 4"),
+                                dbc.CardHeader("Wind Farm 4"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-4", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 7"),
+                                dbc.CardHeader("Wind Farm 7"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-7", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
@@ -397,25 +388,25 @@ maincontent_tab_3 = dbc.Container(
                     [ 
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 2"),
+                                dbc.CardHeader("Wind Farm 2"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-2", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 5"),
+                                dbc.CardHeader("Wind Farm 5"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-5", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 8"),
+                                dbc.CardHeader("Wind Farm 8"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-8", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 10"),
+                                dbc.CardHeader("Wind Farm 10"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-10", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
@@ -425,19 +416,19 @@ maincontent_tab_3 = dbc.Container(
                     [ 
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 3"),
+                                dbc.CardHeader("Wind Farm 3"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-3", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 6"),
+                                dbc.CardHeader("Wind Farm 6"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-6", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
                         dbc.Card( 
                             [ 
-                                dbc.CardHeader("Zone 9"),
+                                dbc.CardHeader("Wind Farm 9"),
                                 dbc.CardBody(dcc.Graph(id="wind-rose-9", style={'marginLeft': '1em', 'marginRight': '1em'})),
                             ], style={'marginBottom': '1em', 'marginTop': '1em','marginLeft': '1em', 'marginRight': '1em'}
                         ),
@@ -513,7 +504,6 @@ def update_graphs(selected_zone, selected_hour, data_power_forecast):
     Input('zone-selector', 'value'),
     Input('slider-hour', 'value'),
     Input('data_wind_forecast', 'data'))   
-
 def update_windspeed(selected_zone, selected_hour, data_wind_forecast):
     df = pd.read_json(data_wind_forecast)
     return get_figure_windspeed(df, selected_zone, selected_hour)
@@ -552,16 +542,16 @@ def update_figure_cumulated_energy(selected_zone, data_power_forecast, data_powe
     Input('data_wind_forecast', 'data'))
 def update_figure_windrose(data_wind):
     df_wind = pd.read_json(data_wind)
-    return get_figure_windrose(df_wind, 'Zone 1', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 2', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 3', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 4', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 5', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 6', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 7', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 8', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 9', show_title=False),\
-           get_figure_windrose(df_wind, 'Zone 10', show_title=False)
+    return get_figure_windrose(df_wind, 'Wind Farm 1', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 2', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 3', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 4', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 5', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 6', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 7', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 8', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 9', show_title=False),\
+           get_figure_windrose(df_wind, 'Wind Farm 10', show_title=False)
 
 @app.callback(
     Output('data_wind_forecast', 'data'),
@@ -605,11 +595,16 @@ def update_data(date):
 # df.to_csv(filename,index=False)
 # df_wind.to_csv(filename_wind,index=False)
 data_forecast = pd.read_csv(PATH_PREDICTIONS, parse_dates=['TIMESTAMP'])
+data_forecast.rename(
+    columns={x: 'Wind Farm '+x.split()[-1] 
+    for x in data_forecast.columns if x.startswith('Zone')}, 
+    inplace=True)
 add_HOUR_column(data_forecast)
 data_all = pd.read_csv(PATH_DATA_ALL, parse_dates=['TIMESTAMP'])
 data_all.interpolate(method='bfill', inplace=True)
-data_all['ZONEID'] = data_all['ZONEID'].apply(lambda x: 'Zone '+str(x))
+data_all['ZONEID'] = data_all['ZONEID'].apply(lambda x: 'Wind Farm '+str(x))
 data_all['HOUR'].replace(0,24, inplace=True)
+data_all.replace('Zone', 'Wind Farm', inplace=True)
 data_all.reset_index(inplace=True)
 
 
