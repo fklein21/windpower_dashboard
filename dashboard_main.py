@@ -42,7 +42,9 @@ about_us_div = dcc.Markdown('''
 
     # Will it Spin?
 
-    ## Predicting wind farm electricity output based on day ahead wind forecasts
+    ### Predicting wind farm electricity output based on day ahead wind forecasts
+
+    ---
 
     ### Capstone Project of the "Voltcasters": Christine, Ferdinand, Moritz, Jerome
 
