@@ -38,6 +38,9 @@ initial_date = '2013-07-01'
 image_filename = os.getcwd() + '/Windrose_legend.png' # replace with your own image
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
 
+image_background = os.getcwd() + '/background_windfarm.jpg' # replace with your own image
+encoded_image_background = base64.b64encode(open(image_filename, 'rb').read())
+
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -254,7 +257,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     fig.layout.template = 'plotly_white'
     
     fig.update_layout( 
-            title='At hour '+str(selected_hour))#+':00'
+            title='At '+str(selected_hour)+':00')
     return fig
 
 ## wind rose
@@ -284,10 +287,10 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
 
     fig = px.bar_polar(datax, 
         r="FREQUENCY", 
-        theta="Winddirection",range_r=[0,20],
-        color="Windspeed", 
+        theta="Winddirection",
+        color="Windspeed",
+        range_r=[0,20],
         color_discrete_sequence= px.colors.sequential.Plasma_r,
-        range_r=[0,20]
     )                     
     
     fig.layout.showlegend = show_legend
@@ -398,9 +401,9 @@ controls = dbc.Card(
     [
         html.Div(
             children=[
-                html.Div( 
-                    dbc.Label("Date\t"),
-                ),
+                # html.Div( 
+                #     dbc.Label("Date\t"),
+                # ),
                 html.Div( 
                     dcc.DatePickerSingle(
                         id='date-picker-single',
@@ -417,7 +420,7 @@ controls = dbc.Card(
         html.Div(''),
         html.Div(
             [
-                dbc.Label("Wind Farm selection:"),
+                # dbc.Label("Wind Farm selection:"),
                 dbc.Checklist(
                     options=[
                         {"label": "Wind Farm 1", "value": "Wind Farm 1"},
@@ -448,6 +451,7 @@ controls = dbc.Card(
 ## sidebar  with controls for date, zone
 sidebar = html.Div(
     [
+        html.H1("Energy Output Forecast for the Next 24 Hours"),
         html.P(
             "Choose date and zone for forecast", className="lead"
         ),
@@ -598,29 +602,38 @@ title_and_tabs = html.Div(
     ]
 )
 
-app.layout = dbc.Container( 
-    [
-        dbc.Row( 
-            [ 
-                dbc.Col( 
+app.layout = html.Div( 
+    children=[ 
+        dbc.Container( 
+            [
+                dbc.Row( 
                     [ 
-                        sidebar,
-                    ], md=3,
+                        dbc.Col( 
+                            [ 
+                                sidebar,
+                            ], md=3,
+                        ),
+                        dbc.Col( 
+                            [
+                                title_and_tabs,
+                            ], md=9,
+                        )
+                    ]
                 ),
-                dbc.Col( 
-                    [
-                        title_and_tabs,
-                    ], md=9,
-                )
-            ]
+                # dcc.Store stores the intermediate value
+                dcc.Store(id='data_wind_forecast'),
+                dcc.Store(id='data_power_forecast'),
+                dcc.Store(id='data_power_yesterday'),
+                dcc.Store(id='data_comparison'),
+            ], fluid=True,
+            style={'background-image': 'url(https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Walney_Offshore_Windfarm_-_geograph.org.uk_-_2391702.jpg/320px-Walney_Offshore_Windfarm_-_geograph.org.uk_-_2391702.jpg)',
+                   'background-repeat': 'no-repeat',
+                    'background-attachment': 'fixed',
+                    'background-size': '100% 100%', }
         ),
-        # dcc.Store stores the intermediate value
-        dcc.Store(id='data_wind_forecast'),
-        dcc.Store(id='data_power_forecast'),
-        dcc.Store(id='data_power_yesterday'),
-        dcc.Store(id='data_comparison'),
-    ], fluid=True,
+    ]
 )
+
 ################################################################################
 # INTERACTION CALLBACKS
 ################################################################################
