@@ -35,12 +35,25 @@ PATH_COMPARISON = 'data_comparison_predicted_observed.csv'
 
 initial_date = '2013-07-01'
 
-image_filename = os.getcwd() + '/Windrose_legend.png' # replace with your own image
+image_filename = os.getcwd() + '/Windrose_legend.png' 
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
 
-image_background = os.getcwd() + '/background_windfarm.jpg' # replace with your own image
-encoded_image_background = base64.b64encode(open(image_filename, 'rb').read())
+about_us_div = dcc.Markdown('''
 
+    # Will it Spin?
+
+    ## Predicting wind farm electricity output based on day ahead wind forecasts
+
+    ### Capstone Project of the "Voltcasters": Christine, Ferdinand, Moritz, Jerome
+
+    This dashboard was develop to show the results of our Capstone which 
+    was about predicting the power output of windfarms based on day ahead wind 
+    forecasts.
+
+    More information about the project can be found on 
+    [our Github page](https://github.com/JeromeSauer/Capstone_WindPowerPredicting). 
+
+''')
 
 ################################################################################
 # HELPER FUNCTIONS
@@ -131,6 +144,14 @@ CARD_TEXT_STYLE = {
     'textAlign': 'center',
     'color': '#0074D9'
 }
+
+style_margins={
+        'background': 'rgba(255, 255, 255, 0.9)', 
+        'marginBottom': '1em', 
+        'marginTop': '1em',
+        'marginLeft': '1em', 
+        'marginRight': '1em'
+        }
 ################################################################################
 # PLOTS
 ################################################################################
@@ -157,6 +178,10 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
     fig.update_xaxes(range = [tmin, tmax])
     fig.update_yaxes(range = [0,24])
     fig.layout.template = 'plotly_white'
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },),
     fig.layout.showlegend = True
     fig.add_shape(type="line",
         x0=selected_hour, y0=0, x1=selected_hour, y1=24,
@@ -164,7 +189,8 @@ def get_figure_windspeed(df, selected_zone, selected_hour=1):
             color="red",
             width=1,
             dash="dash",
-        )
+        ),
+        
     )
     fig.update_layout( 
             title='Windspeed over 24 hours',
@@ -204,6 +230,10 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
         )
     )
     fig.layout.template = 'plotly_white'
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },),
     fig.layout.showlegend = True
     fig.add_shape(type="line",
         x0=selected_hour, y0=0, x1=selected_hour, y1=1,
@@ -221,8 +251,6 @@ def get_figure_24h(df, selected_zone, selected_hour=1):
                 ticktext = ['1:00', '2:00','3:00', '4:00','5:00','6:00', '7:00','8:00', '9:00','10:00' ,'11:00','12:00', '13:00','14:00' ,'15:00','16:00', '17:00','18:00', '19:00',
                            '20:00', '21:00','22:00', '23:00', '24:00']
             ),
-
-        
             yaxis = dict(
                 title ='Energy output in %',
             )
@@ -255,6 +283,10 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
         )
     )
     fig.layout.template = 'plotly_white'
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },),
     
     fig.update_layout( 
             title='At '+str(selected_hour)+':00')
@@ -299,10 +331,14 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
         width=300,
         height=300,
         margin=dict(l=30, r=30, b=30, t=50, pad=4),
+    )
 
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },),
 
     
-    )
     if show_title:
         fig.update_layout( 
             title=selected_zone
@@ -359,6 +395,10 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
         )
     )
     fig.layout.template = 'plotly_white'
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },),
     fig.update_layout( 
         title='Main Energy Output over the whole day')
     return fig
@@ -380,6 +420,10 @@ def get_figure_comparison(df_comparison, selected_zone):
         )
     )
     fig.layout.template = 'plotly_white'
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        'paper_bgcolor': 'rgba(255, 255, 255, 0.9)',
+        },)
     fig.layout.showlegend = True
     return fig
 
@@ -461,19 +505,25 @@ sidebar = html.Div(
 )
 
 title_tab_1 = html.Div('Projected Energy Output', id="title-tab-1")
-figure_energy_24h = dcc.Graph(id='figure-energy-24h')
+figure_energy_24h = dcc.Graph(id='figure-energy-24h',
+            style=style_margins
+            )
 slider_hour = dcc.Slider( 
     id='slider-hour',
     min=1,
     max=24,
     value=1,
-    
     marks = {n : str(n)+':00' for n in range(1,25)},
-    step=None
+    step=None,
 )
 
-figure_energy_per_hour = dcc.Graph(id="figure-energy-per-hour")
-figure_windspeed = dcc.Graph(id="figure-windspeed")
+
+figure_energy_per_hour = dcc.Graph(id="figure-energy-per-hour",
+            style=style_margins
+            )
+figure_windspeed = dcc.Graph(id="figure-windspeed",
+            style=style_margins
+            )
 maincontent_tab_1 = html.Div( 
     [
         figure_energy_24h,
@@ -482,6 +532,8 @@ maincontent_tab_1 = html.Div(
         figure_energy_per_hour,
         figure_windspeed
     ], 
+    #style=style_margins
+    style={'height': '100%'}
 )
 
 
@@ -581,6 +633,12 @@ maincontent_tab_4 = dbc.Container(
     ]
 )
 
+maincontent_tab_5 = dbc.Container( 
+    [ 
+        about_us_div
+    ]
+)
+
 title_and_tabs = html.Div( 
     [
         #Header("Energy Output Forecast for the Next 24 Hours", app),
@@ -595,9 +653,18 @@ title_and_tabs = html.Div(
                     label="Wind speed (in m/s) and Direction", tab_id="tab-wind-roses"),
                 dbc.Tab(maincontent_tab_4, 
                     label="Daily Mean Energy Production", tab_id="tab-mean-energy-production"),
+                dbc.Tab(maincontent_tab_5,
+                    label='About this Dashboard', tab_id='about-dashboard-tab'
+                )
             ],
             id="tabs",
-            active_tab="tab-energy-forecast"
+            active_tab="tab-energy-forecast",
+        ),
+        html.Div( 
+            '', 
+    style={'height': '100%',
+    'width': '10%',
+    'padding': '100px',}
         )
     ]
 )
@@ -626,10 +693,11 @@ app.layout = html.Div(
                 dcc.Store(id='data_power_yesterday'),
                 dcc.Store(id='data_comparison'),
             ], fluid=True,
-            style={'background-image': 'url(https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Walney_Offshore_Windfarm_-_geograph.org.uk_-_2391702.jpg/320px-Walney_Offshore_Windfarm_-_geograph.org.uk_-_2391702.jpg)',
-                   'background-repeat': 'no-repeat',
-                    'background-attachment': 'fixed',
-                    'background-size': '100% 100%', }
+            # style={'background-image': 'url("/assets/background_windfarm.jpg")',
+            #        'background-repeat': 'no-repeat',
+            #        'background-attachment': 'fixed',
+            #        'background-size': '100% 100%', 
+            # }
         ),
     ]
 )
