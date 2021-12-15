@@ -254,7 +254,7 @@ def get_figure_energy_per_hour(df, selected_zone, selected_hour):
     fig.layout.template = 'plotly_white'
     
     fig.update_layout( 
-            title='At '+str(selected_hour))
+            title='At hour '+str(selected_hour))#+':00'
     return fig
 
 ## wind rose
@@ -284,7 +284,7 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
 
     fig = px.bar_polar(datax, 
         r="FREQUENCY", 
-        theta="Winddirection",
+        theta="Winddirection",range_r=[0,20],
         color="Windspeed", 
         color_discrete_sequence= px.colors.sequential.Plasma_r,
         range_r=[0,20]
@@ -295,12 +295,17 @@ def get_figure_windrose(df, selected_zone='Wind Farm 1', show_legend=False, show
         autosize=True,
         width=300,
         height=300,
-        margin=dict(l=30, r=30, b=30, t=50, pad=4)
+        margin=dict(l=30, r=30, b=30, t=50, pad=4),
+
+
+    
     )
     if show_title:
         fig.update_layout( 
             title=selected_zone
         )
+
+    
     return fig
 
 def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
