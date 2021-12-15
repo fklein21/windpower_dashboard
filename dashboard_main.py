@@ -31,6 +31,7 @@ features_retro = ['ZONEID', 'TIMESTAMP', 'HOUR', 'WEEKDAY', 'TARGETVAR']
 
 PATH_PREDICTIONS = 'RandomForest_Predictions.csv'
 PATH_DATA_ALL = 'raw_data_incl_features_test.csv'
+PATH_COMPARISON = 'data_comparison_predicted_observed.csv'
 
 initial_date = '2013-07-01'
 
@@ -305,26 +306,28 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     }
 
     fig = go.Figure(
-    data = [
-        go.Bar(
-            name="Today",
-            x=data["labels"],
-            y=data["Today"],
-        ),
-
-        go.Bar(
-            name="Yesterday",
-            x=data["labels"],
-            y=data["Yesterday"],
-        ),
-    ],
-    layout=go.Layout(
-        title="Issue Types - Original and Models",
-        yaxis_title="Cumulative Energy Output in %",
-        #barmode = 'overlay'
+        data = [
+            go.Bar(
+                name="Yesterday",
+                x=data["labels"],
+                y=data["Yesterday"],
+                offset=-0.2,
+            ),
+            go.Bar(
+                name="Today",
+                x=data["labels"],
+                y=data["Today"],
+                offset=0.0,
+            ),
+        ],
+        layout=go.Layout(
+            title="Issue Types - Original and Models",
+            yaxis_title="Cumulative Energy Output in %",
+            barmode = 'overlay'
+        )
     )
-)
-
+    #fig.update_layout(bargap=0.4)
+    fig.update_traces(width=0.5)
     fig.update_yaxes(range = [0,1])
     fig.update_layout(
         yaxis = dict(
@@ -335,8 +338,10 @@ def get_figure_cumulated_energy(df_forecast, df_yesterday, selected_zone):
     )
     fig.layout.template = 'plotly_white'
     fig.update_layout( 
-            title='Cumulative Energy Output over the whole day')
+        title='Cumulative Energy Output over the whole day')
     return fig
+
+## Function to plot the deviation between actual and predicted
 
 
 
@@ -529,6 +534,13 @@ maincontent_tab_2 = html.Div(
     ]
 )
 
+
+maincontent_tab_4 = dbc.Container( 
+    [   
+        dcc.Graph(id='deviation-forecast-actual')
+    ]
+)
+
 title_and_tabs = html.Div( 
     [
         Header("Energy Output Forecast for the Next 24 Hours", app),
@@ -567,6 +579,7 @@ app.layout = dbc.Container(
         dcc.Store(id='data_wind_forecast'),
         dcc.Store(id='data_power_forecast'),
         dcc.Store(id='data_power_yesterday'),
+        dcc.Store(id='data_comparison'),
     ], fluid=True,
 )
 ################################################################################
@@ -643,6 +656,7 @@ def update_figure_windrose(data_wind):
     Output('data_wind_forecast', 'data'),
     Output('data_power_forecast', 'data'),
     Output('data_power_yesterday', 'data'),
+    Output('data_comparison', 'data'),
     Input('date-picker-single', 'date'))
 def update_data(date):
     data_wind_forecast = get_data(
@@ -662,9 +676,17 @@ def update_data(date):
         features=features_retro, 
         delta_days=-1
     )
+    data_comp = get_data( 
+        date,
+        data=data_comparison,
+        features=None, 
+        delta_days=-1000
+    )
+    print(data_comp.head())
     return data_wind_forecast.to_json(),\
            data_power_forecast.to_json(),\
-           data_power_yesterday.to_json()
+           data_power_yesterday.to_json(),\
+           None
     #### HOVER DATA
     def display_hover(hoverData):
         if hoverData is None:
@@ -687,19 +709,23 @@ def select_all_none(all_selected, options):
 ################################################################################
 # VALUES FOR TESTING THE LAYOUT AND GRAPHS
 ################################################################################
-
+# load and prepare the data
+# forecast data
 data_forecast = pd.read_csv(PATH_PREDICTIONS, parse_dates=['TIMESTAMP'])
 data_forecast.rename(
     columns={x: 'Wind Farm '+x.split()[-1] 
     for x in data_forecast.columns if x.startswith('Zone')}, 
     inplace=True)
 add_HOUR_column(data_forecast)
+# features 
 data_all = pd.read_csv(PATH_DATA_ALL, parse_dates=['TIMESTAMP'])
 data_all.interpolate(method='bfill', inplace=True)
 data_all['ZONEID'] = data_all['ZONEID'].apply(lambda x: 'Wind Farm '+str(x))
 data_all['HOUR'].replace(0,24, inplace=True)
 data_all.replace('Zone', 'Wind Farm', inplace=True)
 data_all.reset_index(inplace=True)
+# comparison between actual and predicted
+data_comparison = pd.read_csv(PATH_COMPARISON)
 
 
 # Add the server clause:
