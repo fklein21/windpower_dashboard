@@ -1,35 +1,23 @@
-# Windpower_Dashboard
+# Windpower Dashboard
 
-## Workflow for development
+This dashboard was developed as part of the capstone project about wind power predictions. It is used to visualize the outputs of the data analysis and modeling work.
 
-1. Set up the environment
-2. Work in notebook to get acquainted with dash plots
-3. Work in app.py-File to create a dash
-4. Check if Dashboard is working locally with
+To explore the dashboard go to the live version on Heroku: [Energy Output Forecast for the Next 24 Hours](https://windpower-forecast.herokuapp.com)
 
-- ` $ python app.py`
-- ` $ gunicorn app:server`
-
-6. Deploy to Heroku
+For more information about the project visit the [project page on GitHub](https://github.com/JeromeSauer/Capstone_WindPowerPredicting).
 
 
 
+## Requirements:
 
+This dashboard uses `Python v3.9.9`. \ 
 
+You can install it with
+ ```console
+ $ pyenv install 3.8.11
+ ```
 
-
-
-
-
-
-
-
-
-### Requirements:
-
-- python = 3.8.11 (you can install it with `pyenv install 3.8.11`)
-
-Setup environment with:
+Setup the environment with:
 
 ```console
 $ make setup
@@ -37,65 +25,54 @@ $ make setup
 
 There are two requirement files in this template: 
 1. **requirements_dev.txt** This is the requirements file you can use locally to set everything up and develop the dashboard. You can add as much here as you want to. 
-2. **requirements.txt** This is the requirements that Heroku uses. Because Memory for the App is very limited it should not contain the development environment (e.g. jupyter) and as few libraries as possible.
-
-You should work with python 3.8.11, this is the version that Heroku is currently (July 2021, check heroku documentation for updates) using .
+2. **requirements.txt** This is the requirements that Heroku uses. Because on Heroku the memory for the dashboard is very limited it should not contain the development environment (e.g. jupyter) and as few libraries as possible.
 
 
+## How To Run Locally
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# FlaskIntroduction
-
-This repo has been updated to work with `Python v3.8` and up.
-
-### How To Run
-1. Install `virtualenv`:
-```
-$ pip install virtualenv
+1. Install `pyenv`:
+```console
+$ brew install pyenv
 ```
 
 2. Open a terminal in the project root directory and run:
-```
-$ virtualenv env
+```console
+$ make setup
 ```
 
 3. Then run the command:
-```
-$ .\env\Scripts\activate
+```console
+$ source .venv/bin/activate
 ```
 
 4. Then install the dependencies:
-```
-$ (env) pip install -r requirements.txt
+```console
+$ pip install -r requirements.txt
 ```
 
 5. Finally start the web server:
-```
-$ (env) python app.py
+```console
+$ python dashboard_main.py
 ```
 
-This server will start on port 5000 by default. You can change this in `app.py` by changing the following line to this:
+This server will start on port 8050 by default. You can change this in `app.py` by changing the following line to this:
 
 ```python
 if __name__ == "__main__":
-    app.run(debug=True, port=<desired port>)
+    app.run_server(debug=True, port=<desired port>)
 ```
+
+## How to deploy on Heroku
+
+This dashboard is hosted on Heroku.
+The workflow to deploy it on Heroku is detailed below.
+
+1. Develop and debug the dashboard locally.
+2. Check the Heroku documantation if you're using the same python version as Heroku and make sure you have the python modules installed in the right versions.
+3. Heroku is using another command to run the dashboard. Check if the dashboard is working locally with\
+ ` $ gunicorn app:server`
+
+5. Edit the Procfile that Heroku uses to start the dashboard. It should contain the following command:\
+`web: gunicorn dashboard_main:server`
+
+6. Deploy to Heroku
