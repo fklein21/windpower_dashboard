@@ -10,7 +10,7 @@ For more information about the project visit the [project page on GitHub](https:
 
 ## Requirements:
 
-This dashboard uses `Python v3.9.9`. \ 
+This dashboard uses `Python v3.9.9`. 
 
 You can install it with
  ```console
