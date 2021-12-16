@@ -55,6 +55,8 @@ about_us_div = dcc.Markdown('''
     More information about the project can be found on 
     [our Github page](https://github.com/JeromeSauer/Capstone_WindPowerPredicting). 
 
+    The code for this dashboard can be found [here](https://github.com/fklein21/windpower_dashboard).
+
 ''')
 
 ################################################################################
@@ -855,4 +857,3 @@ data_comparison['DATE'] = pd.to_datetime(data_comparison['DATE'])
 # Add the server clause:
 if __name__ == "__main__":
     app.run_server()
-    pass
